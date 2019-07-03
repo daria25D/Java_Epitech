@@ -1,5 +1,5 @@
 public class FirTree {
-    public static void printRow(int n, int spaces) {
+    public static void printTreeRow(int n, int spaces) {
         for (int i = 0; i < spaces; i++) {
             System.out.print(" ");
         }
@@ -31,14 +31,14 @@ public class FirTree {
             int spacesToTree = spaces;
             for (int i = 0; i < size; i++) {
                 for (int j = 0; j < rows; j++) {
-                    printRow(top, spaces);
+                    printTreeRow(top, spaces);
                     top += 2;
                     spaces--;
                 }
-                top = bottom - 2;
+                top = bottom - 2 - 2*(i/3);
                 rows++;
                 bottom = (rows - 1)*2 + top;
-                spaces += 2;
+                spaces += 2 + (i/3);
             }
             spacesToTree -= treeWidth / 2;
             for (int i = 0; i < size; i++) {
