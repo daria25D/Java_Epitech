@@ -20,6 +20,7 @@ public class Snake extends JPanel implements Runnable {
 
     private int score;
     private static int highScore = 0;
+    private static int speedUp = 0;
     private int Board[][] = new int[ROWS][COLUMNS];
     private List<Point> snake;
     private Point food;
@@ -29,7 +30,10 @@ public class Snake extends JPanel implements Runnable {
     private boolean upDir = false;
     private boolean downDir = false;
 
+    private static boolean addWalls = false;
+
     private volatile boolean gameOver = true;
+    private volatile boolean firstGame = true;
 
     Thread gameThread;
 
@@ -73,6 +77,17 @@ public class Snake extends JPanel implements Runnable {
                     leftDir = false;
                     rightDir = false;
                 }
+                if (key == KeyEvent.VK_SPACE) {
+                    speedUp = 25;
+                } else {
+                    speedUp = 0;
+                }
+                if (key == KeyEvent.VK_A) {
+                    addWalls = true;
+                }
+                if (key == KeyEvent.VK_R) {
+                    addWalls = false;
+                }
                 repaint();
             }
         });
@@ -80,6 +95,7 @@ public class Snake extends JPanel implements Runnable {
 
     private void startNewGame() {
         gameOver = false;
+        firstGame = false;
         stop();
         initBoard();
         food = new Point();
@@ -114,14 +130,26 @@ public class Snake extends JPanel implements Runnable {
                 if (j == 0 || j == COLUMNS - 1 ||
                     i == 0 || i == ROWS - 1)
                         Board[i][j] = WALL;
+                else Board[i][j] = 0;
+//        System.out.println(addWalls);
+        if (addWalls) {
+            for (int k = 0; k < 15; k++) {
+                int i = rand.nextInt(ROWS - 2) + 1;
+                int j = rand.nextInt(COLUMNS - 2) + 1;
+                Board[i][j] = WALL;
+            }
+        }
     }
 
+    /**
+     * TODO: array of food + if inside of the walls (snake can't get to the food) then try another spot/add one more
+     */
     private void addFood() {
         while (true) {
             int x = rand.nextInt(ROWS - 2) + 1;
             int y = rand.nextInt(COLUMNS - 2) + 1;
             Point p = new Point(x, y);
-            if (snake.contains(p) || food == p || Board[x][y] == WALL)
+            if (snake.contains(p) || food == p || Board[y][x] == WALL)
                 continue;
             else {
                 food.move(p.x, p.y);
@@ -148,7 +176,9 @@ public class Snake extends JPanel implements Runnable {
         Point head = snake.get(0);
         Point next = moveToDir(head);
         for (Point p: snake) {
-            if ((p.x == next.x && p.y == next.y) || Board[next.x][next.y] == WALL) {
+            if (Board[next.y][next.x] == WALL) {System.out.println("Wall"); return true;}
+            if (p.x == next.x && p.y == next.y) {
+                System.out.println("Snake");
                 return true;
             }
         }
@@ -193,7 +223,7 @@ public class Snake extends JPanel implements Runnable {
     public void run() {
         while (Thread.currentThread() == gameThread) {
             try {
-                Thread.sleep(Math.max(75 - score, 10));
+                Thread.sleep(Math.max(75 - score - speedUp, 20));
             } catch (InterruptedException e){
                 return;
             }
@@ -242,11 +272,38 @@ public class Snake extends JPanel implements Runnable {
         g.setColor(Color.lightGray);
         g.setFont(getFont().deriveFont(Font.BOLD, 18));
         g.drawString("Click to start", 245, 320);
+        g.setFont(getFont().deriveFont(Font.BOLD, 14));
+        g.setColor(getForeground());
+        g.drawString("Press A to add walls", 30, 530);
+        g.drawString("Press R to remove walls", 30, 550);
+    }
+
+    private void drawGameOverScreen(Graphics2D g) {
+        g.setColor(Color.red);
+        g.setFont(getFont());
+        g.drawString("Game over", 150, 260);
+        g.setColor(Color.lightGray);
+        g.setFont(getFont().deriveFont(Font.BOLD, 18));
+        g.drawString("Click to restart", 222, 320);
+        StringBuilder s = new StringBuilder();
+        StringBuilder hs = new StringBuilder();
+        hs.append("high score: ");
+        hs.append(highScore);
+        s.append(" your score: ");
+        s.append(score);
+        g.setColor(Color.orange);
+        g.drawString(s.toString(), 225, 360);
+        g.drawString(hs.toString(), 232, 400);
+        g.setFont(getFont().deriveFont(Font.BOLD, 14));
+//        g.setColor(Color.lightGray);
+        g.setColor(getForeground());
+        g.drawString("Press A to add walls", 30, 530);
+        g.drawString("Press R to remove walls", 30, 550);
     }
 
     private void drawScore(Graphics2D g) {
         int h = getHeight();
-        g.setFont(getFont().deriveFont(Font.BOLD, 18));
+        g.setFont(getFont().deriveFont(Font.BOLD, 16));
         g.setColor(getForeground());
         StringBuilder s = new StringBuilder();
         s.append("high score: ");
@@ -262,8 +319,10 @@ public class Snake extends JPanel implements Runnable {
         Graphics2D g = (Graphics2D)G;
         g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         drawBoard(g);
-        if (gameOver) {
+        if (gameOver && firstGame) {
             drawStartScreen(g);
+        } else if (gameOver && !firstGame) {
+            drawGameOverScreen(g);
         } else {
             drawSnake(g);
             drawFood(g);
