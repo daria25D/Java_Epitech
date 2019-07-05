@@ -23,7 +23,7 @@ public class Snake extends JPanel implements Runnable {
     private static int speedUp = 0;
     private int Board[][] = new int[ROWS][COLUMNS];
     private List<Point> snake;
-    private Point food;
+    private Food food;
 
     private boolean leftDir = true;
     private boolean rightDir = false;
@@ -34,6 +34,7 @@ public class Snake extends JPanel implements Runnable {
 
     private volatile boolean gameOver = true;
     private volatile boolean firstGame = true;
+    private volatile boolean inMenuScreen = true;
 
     Thread gameThread;
 
@@ -61,31 +62,35 @@ public class Snake extends JPanel implements Runnable {
                     leftDir = true;
                     upDir = false;
                     downDir = false;
+//                    System.out.println("left");
                 }
                 if (key == KeyEvent.VK_RIGHT && !leftDir) {
                     rightDir = true;
                     upDir = false;
                     downDir = false;
+//                    System.out.println("right");
                 }
                 if (key == KeyEvent.VK_UP && !downDir) {
                     upDir = true;
                     leftDir = false;
                     rightDir = false;
+//                    System.out.println("up");
                 }
                 if (key == KeyEvent.VK_DOWN && !upDir) {
                     downDir = true;
                     leftDir = false;
                     rightDir = false;
+//                    System.out.println("down");
                 }
                 if (key == KeyEvent.VK_SPACE) {
                     speedUp = 25;
                 } else {
                     speedUp = 0;
                 }
-                if (key == KeyEvent.VK_A) {
+                if (key == KeyEvent.VK_A && inMenuScreen) {
                     addWalls = true;
                 }
-                if (key == KeyEvent.VK_R) {
+                if (key == KeyEvent.VK_R && inMenuScreen) {
                     addWalls = false;
                 }
                 repaint();
@@ -98,13 +103,13 @@ public class Snake extends JPanel implements Runnable {
         firstGame = false;
         stop();
         initBoard();
-        food = new Point();
+        food = new Food();
         if (score > highScore)
             highScore = score;
         score = 0;
         snake = new ArrayList<>();
         for (int i = 0; i < INITIAL_SIZE; i++) {
-            snake.add(new Point(COLUMNS/2 + i, ROWS/2 + i));
+            snake.add(new Point(COLUMNS / 2 + i, ROWS / 2 + i));
         }
         addFood();
         (gameThread = new Thread(this)).start();
@@ -128,8 +133,8 @@ public class Snake extends JPanel implements Runnable {
         for (int i = 0; i < ROWS; i++)
             for (int j = 0; j < COLUMNS; j++)
                 if (j == 0 || j == COLUMNS - 1 ||
-                    i == 0 || i == ROWS - 1)
-                        Board[i][j] = WALL;
+                        i == 0 || i == ROWS - 1)
+                    Board[i][j] = WALL;
                 else Board[i][j] = 0;
 //        System.out.println(addWalls);
         if (addWalls) {
@@ -148,18 +153,21 @@ public class Snake extends JPanel implements Runnable {
         while (true) {
             int x = rand.nextInt(ROWS - 2) + 1;
             int y = rand.nextInt(COLUMNS - 2) + 1;
+            int t = rand.nextInt(3);
+
             Point p = new Point(x, y);
-            if (snake.contains(p) || food == p || Board[y][x] == WALL)
+            if (snake.contains(p) || food.getCoord() == p || Board[y][x] == WALL)
                 continue;
             else {
-                food.move(p.x, p.y);
+                food.setCoord(p);
+                food.setType(Food.Type.values()[t]);
                 break;
             }
         }
 
     }
 
-    private Point moveToDir(Point p) {
+    private Point nextPointInDir(Point p) {
         Point next = new Point(p);
         if (leftDir)
             next.x--;
@@ -174,11 +182,14 @@ public class Snake extends JPanel implements Runnable {
 
     private boolean collision() {
         Point head = snake.get(0);
-        Point next = moveToDir(head);
-        for (Point p: snake) {
-            if (Board[next.y][next.x] == WALL) {System.out.println("Wall"); return true;}
+        Point next = nextPointInDir(head);
+        for (Point p : snake) {
+            if (Board[next.y][next.x] == WALL) {
+//                System.out.println("Wall");
+                return true;
+            }
             if (p.x == next.x && p.y == next.y) {
-                System.out.println("Snake");
+//                System.out.println("Snake");
                 return true;
             }
         }
@@ -205,33 +216,35 @@ public class Snake extends JPanel implements Runnable {
     }
 
     private boolean eatFood() {
-        Point head  = snake.get(0);
-        Point next = moveToDir(head);
-        if (next.equals(food)) {
+        Point head = snake.get(0);
+        Point next = nextPointInDir(head);
+        if (next.equals(food.getCoord())) {
             return true;
         }
         return false;
     }
 
     private void growSnake() {
-        Point tail = snake.get(snake.size() - 1);
-        snake.add(new Point(moveToDir(tail)));
+        int growCount = food.getType().getNum();
+        for (int i = 0; i < growCount; i++) {
+            Point tail = snake.get(snake.size() - 1);
+            snake.add(new Point(nextPointInDir(tail)));
+        }
     }
-
 
     @Override
     public void run() {
         while (Thread.currentThread() == gameThread) {
             try {
                 Thread.sleep(Math.max(75 - score - speedUp, 20));
-            } catch (InterruptedException e){
+            } catch (InterruptedException e) {
                 return;
             }
             if (collision()) {
                 gameOver();
             } else {
                 if (eatFood()) {
-                    score++;
+                    score += food.getType().getNum();
                     growSnake();
                     addFood();
                 }
@@ -254,24 +267,39 @@ public class Snake extends JPanel implements Runnable {
         Point head = snake.get(0);
         g.fillRect(head.x * DOT_SIZE, head.y * DOT_SIZE, DOT_SIZE, DOT_SIZE);
         g.setColor(Color.red);
-        for (Point p: snake) {
+        for (Point p : snake) {
             if (p == head) continue;
             g.fillRect(p.x * DOT_SIZE, p.y * DOT_SIZE, DOT_SIZE, DOT_SIZE);
         }
     }
 
     private void drawFood(Graphics2D g) {
-        g.setColor(Color.green);
-        g.fillRect(food.x * DOT_SIZE, food.y * DOT_SIZE, DOT_SIZE, DOT_SIZE);
+        switch (food.getType().getNum()) {
+            case 1:
+                g.setColor(Color.green);
+                break;
+            case 2:
+                g.setColor(Color.orange);
+                break;
+            case 3:
+                g.setColor(Color.magenta);
+                break;
+        }
+        g.fillRect(food.getX() * DOT_SIZE, food.getY() * DOT_SIZE, DOT_SIZE, DOT_SIZE);
+    }
+
+    private void drawCenteredString(Graphics2D g, String s, int w, int y, Font font, Color color) {
+        g.setFont(font);
+        g.setColor(color);
+        FontMetrics metrics = g.getFontMetrics();
+        int x = (w - metrics.stringWidth(s)) / 2;
+        g.drawString(s, x, y);
     }
 
     private void drawStartScreen(Graphics2D g) {
-        g.setColor(Color.magenta);
-        g.setFont(getFont());
-        g.drawString("Snake", 230, 260);
-        g.setColor(Color.lightGray);
-        g.setFont(getFont().deriveFont(Font.BOLD, 18));
-        g.drawString("Click to start", 245, 320);
+        int width = this.getSize().width;
+        drawCenteredString(g, "Snake", width, 260, getFont(), Color.magenta);
+        drawCenteredString(g, "Click to start", width, 320, getFont().deriveFont(Font.BOLD, 18), Color.lightGray);
         g.setFont(getFont().deriveFont(Font.BOLD, 14));
         g.setColor(getForeground());
         g.drawString("Press A to add walls", 30, 530);
@@ -279,23 +307,19 @@ public class Snake extends JPanel implements Runnable {
     }
 
     private void drawGameOverScreen(Graphics2D g) {
-        g.setColor(Color.red);
-        g.setFont(getFont());
-        g.drawString("Game over", 150, 260);
-        g.setColor(Color.lightGray);
-        g.setFont(getFont().deriveFont(Font.BOLD, 18));
-        g.drawString("Click to restart", 222, 320);
+        int width = this.getSize().width;
+        drawCenteredString(g, "Game over", width, 260, getFont(), Color.red);
+        drawCenteredString(g, "Click to restart", width, 320, getFont().deriveFont(Font.BOLD, 18), Color.lightGray);
         StringBuilder s = new StringBuilder();
         StringBuilder hs = new StringBuilder();
         hs.append("high score: ");
         hs.append(highScore);
-        s.append(" your score: ");
+        s.append("your score: ");
         s.append(score);
         g.setColor(Color.orange);
-        g.drawString(s.toString(), 225, 360);
-        g.drawString(hs.toString(), 232, 400);
+        drawCenteredString(g, s.toString(), width, 360, getFont().deriveFont(Font.BOLD, 18), Color.orange);
+        drawCenteredString(g, hs.toString(), width, 400, getFont().deriveFont(Font.BOLD, 18), Color.orange);
         g.setFont(getFont().deriveFont(Font.BOLD, 14));
-//        g.setColor(Color.lightGray);
         g.setColor(getForeground());
         g.drawString("Press A to add walls", 30, 530);
         g.drawString("Press R to remove walls", 30, 550);
@@ -316,14 +340,17 @@ public class Snake extends JPanel implements Runnable {
     @Override
     public void paintComponent(Graphics G) {
         super.paintComponent(G);
-        Graphics2D g = (Graphics2D)G;
+        Graphics2D g = (Graphics2D) G;
         g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         drawBoard(g);
         if (gameOver && firstGame) {
+            inMenuScreen = true;
             drawStartScreen(g);
         } else if (gameOver && !firstGame) {
+            inMenuScreen = true;
             drawGameOverScreen(g);
         } else {
+            inMenuScreen = false;
             drawSnake(g);
             drawFood(g);
             drawScore(g);
