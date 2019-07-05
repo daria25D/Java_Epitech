@@ -147,7 +147,7 @@ public class Snake extends JPanel implements Runnable {
     }
 
     /**
-     * TODO: array of food + if inside of the walls (snake can't get to the food) then try another spot/add one more
+     * TODO: array of food? + if inside of the walls (snake can't get to the food) then try another spot/add one more
      */
     private void addFood() {
         while (true) {
@@ -238,9 +238,9 @@ public class Snake extends JPanel implements Runnable {
 
     private void growSnake() {
         int growCount = food.getType().getNum();
+        Point tail = snake.get(snake.size() - 1);
         for (int i = 0; i < growCount; i++) {
-            Point tail = snake.get(snake.size() - 1);
-            snake.add(new Point(nextPointInDir(tail)));
+            snake.add(new Point(tail));
         }
     }
 
