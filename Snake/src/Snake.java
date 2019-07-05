@@ -153,10 +153,22 @@ public class Snake extends JPanel implements Runnable {
         while (true) {
             int x = rand.nextInt(ROWS - 2) + 1;
             int y = rand.nextInt(COLUMNS - 2) + 1;
-            int t = rand.nextInt(3);
-
+            int probability = rand.nextInt(100);
+            int t = 0;
+            if (probability < 50)
+                t = 0; // SMALL - 50% chance
+            else if (probability < 80 && probability >= 50)
+                t = 1; //MEDIUM - 30% chance
+            else if (probability < 100 && probability >= 80)
+                t = 2; //LARGE - 20% chance
+//            System.out.println(probability);
             Point p = new Point(x, y);
             if (snake.contains(p) || food.getCoord() == p || Board[y][x] == WALL)
+                continue;
+            if ((Board[y - 1][x] == WALL && Board[y + 1][x] == WALL && Board[y][x - 1] == WALL) ||
+                    (Board[y - 1][x] == WALL && Board[y + 1][x] == WALL && Board[y][x + 1] == WALL) ||
+                    (Board[y][x - 1] == WALL && Board[y][x + 1] == WALL && Board[y - 1][x] == WALL) ||
+                    (Board[y][x - 1] == WALL && Board[y][x + 1] == WALL && Board[y + 1][x] == WALL))
                 continue;
             else {
                 food.setCoord(p);
