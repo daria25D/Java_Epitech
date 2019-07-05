@@ -58,25 +58,25 @@ public class Snake extends JPanel implements Runnable {
             @Override
             public void keyPressed(KeyEvent e) {
                 int key = e.getKeyCode();
-                if (key == KeyEvent.VK_LEFT && !rightDir) {
+                if ((key == KeyEvent.VK_LEFT || key == KeyEvent.VK_A) && !inMenuScreen && !rightDir) {
                     leftDir = true;
                     upDir = false;
                     downDir = false;
 //                    System.out.println("left");
                 }
-                if (key == KeyEvent.VK_RIGHT && !leftDir) {
+                if ((key == KeyEvent.VK_RIGHT || key == KeyEvent.VK_D) && !inMenuScreen && !leftDir) {
                     rightDir = true;
                     upDir = false;
                     downDir = false;
 //                    System.out.println("right");
                 }
-                if (key == KeyEvent.VK_UP && !downDir) {
+                if ((key == KeyEvent.VK_UP || key == KeyEvent.VK_W) && !inMenuScreen && !downDir) {
                     upDir = true;
                     leftDir = false;
                     rightDir = false;
 //                    System.out.println("up");
                 }
-                if (key == KeyEvent.VK_DOWN && !upDir) {
+                if ((key == KeyEvent.VK_DOWN || key == KeyEvent.VK_S) && !inMenuScreen && !upDir) {
                     downDir = true;
                     leftDir = false;
                     rightDir = false;
